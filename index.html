@@ -22,6 +22,30 @@
             </div>
         </section>
 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS // Arcade Ultra</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="app">
+        <section id="screen-auth" class="screen active">
+            <div class="glass-card auth-box">
+                <div class="apple-logo"><i class="fa-solid fa-gamepad"></i></div>
+                <h1>NEXUS ID</h1>
+                <p class="subtitle">Войдите в игровую экосистему</p>
+                <div class="input-group">
+                    <input type="text" id="username-input" placeholder="Имя игрока..." autocomplete="off">
+                </div>
+                <button id="login-btn" class="ios-btn primary">Войти в Лобби</button>
+            </div>
+        </section>
+
         <section id="screen-lobby" class="screen">
             <header class="ios-header">
                 <div class="user-badge">
@@ -36,36 +60,42 @@
 
             <main class="lobby-content">
                 <div id="tab-games" class="tab-page active">
-                    <h2 class="section-title">Игры <span class="game-count">2 / 30</span></h2>
+                    <h2 class="section-title">Игры <span class="game-count">4 / 30</span></h2>
                     <div class="games-grid">
                         
                         <div class="game-card" data-game="snake">
-                            <div class="game-cover snake-cover">
-                                <i class="fa-solid fa-staff-snake"></i>
-                            </div>
+                            <div class="game-cover snake-cover"><i class="fa-solid fa-staff-snake"></i></div>
                             <div class="game-info">
-                                <h3>Neon Snake</h3>
-                                <p>Классика в кибер-стиле</p>
-                                <span class="tag tag-senior">Senior Ready</span>
+                                <h3>Neon Snake 2.0</h3>
+                                <p>Частицы, бонусы, стены</p>
+                                <span class="tag tag-senior">Juiced</span>
                             </div>
                         </div>
 
                         <div class="game-card" data-game="reactor">
-                            <div class="game-cover reactor-cover">
-                                <i class="fa-solid fa-bolt"></i>
-                            </div>
+                            <div class="game-cover reactor-cover"><i class="fa-solid fa-bolt"></i></div>
                             <div class="game-info">
-                                <h3>Tap Reactor</h3>
-                                <p>Испытание реакции</p>
+                                <h3>Tap Reactor Chaos</h3>
+                                <p>Комбо, бомбы, множители</p>
+                                <span class="tag tag-senior">Crazy</span>
+                            </div>
+                        </div>
+
+                        <div class="game-card" data-game="blockblast">
+                            <div class="game-cover block-cover"><i class="fa-solid fa-cubes"></i></div>
+                            <div class="game-info">
+                                <h3>Block Blast Arcade</h3>
+                                <p>Уничтожай ряды блоков</p>
                                 <span class="tag tag-new">New</span>
                             </div>
                         </div>
 
-                        <div class="game-card locked">
-                            <div class="game-cover"><i class="fa-solid fa-lock"></i></div>
+                        <div class="game-card" data-game="cyberdash">
+                            <div class="game-cover dash-cover"><i class="fa-solid fa-jet-fighter-up"></i></div>
                             <div class="game-info">
-                                <h3>Block Blast</h3>
-                                <p>Скоро в обновлении</p>
+                                <h3>Cyber Dash</h3>
+                                <p>Гравитационный хардкор</p>
+                                <span class="tag tag-new">Ultra</span>
                             </div>
                         </div>
 
@@ -73,9 +103,8 @@
                 </div>
 
                 <div id="tab-shop" class="tab-page">
-                    <h2 class="section-title">Скины Неона</h2>
-                    <div class="shop-grid" id="skins-container">
-                        </div>
+                    <h2 class="section-title">Скины Экосистемы</h2>
+                    <div class="shop-grid" id="skins-container"></div>
                 </div>
             </main>
 
@@ -95,13 +124,25 @@
             </nav>
         </section>
 
-        <section id="screen-game" class="screen">
-            <div class="game-top-bar">
-                <button id="exit-game-btn" class="blur-btn"><i class="fa-solid fa-chevron-left"></i> Лобби</button>
-                <div class="live-score">Счёт: <span id="current-game-score">0</span></div>
+        <section id="screen-mode-select" class="screen">
+            <div class="glass-card mode-box">
+                <h2 id="mode-title">Выбор режима</h2>
+                <p class="best-score">Ваш рекорд: <span id="mode-best-score">0</span></p>
+                <div class="mode-options" id="mode-options-container">
+                    </div>
+                <button id="start-game-final-btn" class="ios-btn primary">Запуск</button>
+                <button id="back-to-lobby-btn" class="ios-btn secondary">Назад в лобби</button>
             </div>
-            <div id="game-viewport">
+        </section>
+
+        <section id="screen-game" class="screen">
+            <div id="game-root-container">
+                <div class="game-top-bar">
+                    <button id="exit-game-btn" class="blur-btn"><i class="fa-solid fa-chevron-left"></i> Лобби</button>
+                    <div class="live-score">Счёт: <span id="current-game-score">0</span></div>
                 </div>
+                <div id="game-viewport"></div>
+            </div>
         </section>
     </div>
 
