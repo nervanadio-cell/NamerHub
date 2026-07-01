@@ -1,138 +1,550 @@
+/* ============================================================================
+   NEXUS ARCADE PLATFORM CORE DESIGN SYSTEM
+   STYLE SHEET SPECIFICATION: PREMIUM CYBER-iOS AESTHETICS
+   ============================================================================ */
+
 :root {
-    --bg-dark: #05060a;
-    --glass-bg: rgba(255, 255, 255, 0.04);
-    --glass-border: rgba(255, 255, 255, 0.07);
-    --ios-blue: #0A84FF;
-    --ios-green: #30D158;
-    --ios-purple: #BF5AF2;
-    --ios-orange: #FF9F0A;
-    --ios-red: #FF453A;
-    --text-main: #F5F5F7;
-    --text-muted: #86868B;
-    --iphone-ease: cubic-bezier(0.85, 0, 0.15, 1);
+    /* Цветовая палитра - Киберпанк & Нативный iOS Dark Mode */
+    --bg-base: #060810;
+    --bg-surface: rgba(18, 22, 38, 0.65);
+    --bg-surface-active: rgba(30, 37, 62, 0.8);
+    --bg-dock: rgba(10, 12, 22, 0.45);
+    
+    /* Неоновые акценты */
+    --accent-neon: #00EF72;
+    --accent-blue: #0A84FF;
+    --accent-purple: #BF5AF2;
+    --accent-orange: #FF9F0A;
+    
+    /* Системные цвета */
+    --text-main: #FFFFFF;
+    --text-muted: #8E8E93;
+    --text-dark: #000000;
+    --danger: #FF375F;
+    --warning: #FFD60A;
+    
+    /* Свечения (Glow Effects) */
+    --glow-neon: rgba(0, 239, 114, 0.25);
+    --glow-danger: rgba(255, 55, 95, 0.3);
+    
+    /* iOS Тайминги Анимации (Fast-Slow-Fast) */
+    --ios-transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    --ios-snap: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    
+    /* Отступы под экраны iPhone без рамок */
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-top: env(safe-area-inset-top, 0px);
 }
 
+/* Глобальный сброс стилей */
 * {
-    box-sizing: border-box; margin: 0; padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    -webkit-tap-highlight-color: transparent; user-select: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-smoothing: antialiased;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Кастомный футуристичный скроллбар для длинных списков */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-neon);
 }
 
 body {
-    background-color: var(--bg-dark); color: var(--text-main);
-    min-height: 100vh; overflow: hidden;
-    background-image: 
-        radial-gradient(circle at 10% 15%, rgba(191, 90, 242, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 90% 85%, rgba(10, 132, 255, 0.1) 0%, transparent 50%);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
+    background-color: #020306;
+    color: var(--text-main);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#app, #game-root-container { width: 100vw; height: 100vh; position: relative; }
+/* Главный контейнер-оболочка платформы */
+#game-root-container {
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    background: radial-gradient(circle at 50% 0%, #12162e 0%, var(--bg-base) 75%);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
 
-/* Экраны с плавной кривой Apple */
+/* Десктопный режим (Имитация смартфона Apple премиум-класса) */
+@media (min-width: 481px) {
+    #game-root-container {
+        height: 94vh;
+        border-radius: 44px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 
+                    inset 0 0 20px rgba(255, 255, 255, 0.02);
+    }
+}
+
+/* Траектория аппаратного дрожания дисплея (Screen Shake Engine) */
+@keyframes physicalShake {
+    0% { transform: translate(0, 0) scale(1); }
+    15% { transform: translate(-7px, 5px) rotate(-0.5deg); }
+    30% { transform: translate(7px, -4px) rotate(0.8deg); }
+    45% { transform: translate(-5px, -2px) rotate(-0.6deg); }
+    60% { transform: translate(5px, 4px) scale(0.99); }
+    75% { transform: translate(-2px, 2px); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+#game-root-container.shake {
+    animation: physicalShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Базовый класс для всех экранов платформы */
 .screen {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0; pointer-events: none;
-    transform: scale(0.95) translateY(30px);
-    transition: transform 0.6s var(--iphone-ease), opacity 0.4s ease;
-    z-index: 1;
-}
-.screen.active { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); z-index: 2; }
-
-/* Glassmorphism */
-.glass-card {
-    background: var(--glass-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    border: 1px solid var(--glass-border); border-radius: 30px;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-}
-
-/* Эффект тряски экрана при взрыве/урожене */
-.shake { animation: ios-shake 0.35s var(--iphone-ease) cubic-bezier(.36,.07,.19,.97) both; }
-@keyframes ios-shake {
-    10%, 90% { transform: translate3d(-2px, 0, 0); }
-    20%, 80% { transform: translate3d(4px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-    40%, 60% { transform: translate3d(6px, 0, 0); }
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    z-index: 10;
+    opacity: 0;
+    transform: scale(1.06);
+    transition: var(--ios-transition);
+    padding: calc(20px + var(--safe-area-top)) 24px calc(96px + var(--safe-area-bottom)) 24px;
 }
 
-/* Элементы меню авторизации и выбора модов */
-#screen-auth, #screen-mode-select { display: flex; align-items: center; justify-content: center; }
-.auth-box, .mode-box { width: 90%; max-width: 380px; padding: 40px 30px; text-align: center; }
-.apple-logo { font-size: 50px; background: linear-gradient(135deg, var(--ios-blue), var(--ios-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
-.subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 25px; }
-.best-score { font-size: 16px; color: var(--ios-orange); font-weight: 600; margin-bottom: 20px; }
-
-/* Кнопки модов */
-.mode-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
-.mode-btn {
-    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-    padding: 16px; border-radius: 16px; color: white; cursor: pointer;
-    font-size: 15px; font-weight: 600; text-align: left; transition: all 0.3s var(--iphone-ease);
+.screen.active {
+    display: flex;
+    opacity: 1;
+    transform: scale(1);
 }
-.mode-btn.selected { background: var(--ios-blue); border-color: transparent; box-shadow: 0 0 20px rgba(10, 132, 255, 0.4); }
+
+/* --- МОДУЛЬ АВТОРИЗАЦИИИ (LOGIN SCREEN) --- */
+#screen-login {
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    background: #060810;
+    padding-bottom: 30px;
+}
+
+.brand-logo {
+    text-align: center;
+    margin-bottom: 44px;
+}
+
+.brand-logo .logo-icon {
+    font-size: 64px;
+    text-shadow: 0 0 40px var(--glow-neon);
+    animation: floatingOrb 4s infinite ease-in-out;
+}
+
+.brand-logo h1 {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-top: 16px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #7c849b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.login-card {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 28px;
+    padding: 28px;
+    backdrop-filter: blur(25px) saturate(190%);
+    -webkit-backdrop-filter: blur(25px) saturate(190%);
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
 
 .input-group input {
-    width: 100%; padding: 16px 20px; border-radius: 16px;
-    background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
-    color: white; font-size: 16px; outline: none; margin-bottom: 15px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 16px;
+    color: var(--text-main);
+    font-size: 16px;
+    outline: none;
+    transition: var(--ios-snap);
 }
-.ios-btn {
-    width: 100%; padding: 16px; border-radius: 16px; border: none;
-    font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s;
+
+.input-group input:focus {
+    border-color: var(--accent-neon);
+    box-shadow: 0 0 20px var(--glow-neon), inset 0 0 8px rgba(0,239,114,0.1);
 }
-.ios-btn.primary { background: var(--ios-blue); color: white; margin-bottom: 10px; }
-.ios-btn.secondary { background: rgba(255,255,255,0.08); color: white; }
-.ios-btn:active { transform: scale(0.96); filter: brightness(0.8); }
 
-/* Лобби */
-.ios-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; height: 80px; }
-.user-badge, .balance-badge { display: flex; align-items: center; gap: 10px; background: var(--glass-bg); padding: 8px 16px; border-radius: 100px; border: 1px solid var(--glass-border); font-weight: 600; font-size: 14px; }
-.lobby-content { height: calc(100vh - 180px); overflow-y: auto; padding: 0 24px; }
-.tab-page { display: none; animation: fadeIn 0.4s var(--iphone-ease); }
-.tab-page.active { display: block; }
-.section-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; }
-.game-count { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+/* Кнопки в стиле Apple Control Center */
+.prime-btn {
+    width: 100%;
+    background: var(--accent-neon);
+    color: var(--text-dark);
+    border: none;
+    border-radius: 16px;
+    padding: 18px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--ios-transition);
+    box-shadow: 0 6px 26px var(--glow-neon);
+}
 
-/* Грид Игр */
-.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; padding-bottom: 50px; }
-.game-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 14px; cursor: pointer; transition: all 0.4s var(--iphone-ease); display: flex; flex-direction: column; }
-.game-card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,0.15); box-shadow: 0 15px 30px rgba(0,0,0,0.4); }
-.game-card:active { transform: scale(0.95); }
-.game-cover { height: 110px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 42px; margin-bottom: 12px; }
+.prime-btn:active {
+    transform: scale(0.95);
+    opacity: 0.85;
+}
 
-/* Градиенты коверов */
-.snake-cover { background: linear-gradient(135deg, #00b4db, #0083b0); color: white; }
-.reactor-cover { background: linear-gradient(135deg, #f857a6, #ff5858); color: white; }
-.block-cover { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
-.dash-cover { background: linear-gradient(135deg, #8a2387, #e94057); color: white; }
+/* --- ИНТЕРФЕЙС КОРНЕВОГО ЛОББИ (LOBBY ENGINE) --- */
+.tab-page {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
 
-.game-info h3 { font-size: 15px; margin-bottom: 4px; font-weight: 600; }
-.game-info p { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
-.tag { align-self: flex-start; font-size: 9px; padding: 3px 6px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
-.tag-senior { background: rgba(48, 209, 88, 0.15); color: var(--ios-green); }
-.tag-new { background: rgba(10, 132, 255, 0.15); color: var(--ios-blue); }
+.tab-page.active {
+    display: flex;
+}
 
-/* Магазин */
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
-.skin-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 16px; text-align: center; }
-.skin-preview { width: 55px; height: 55px; border-radius: 50%; margin: 0 auto 12px auto; box-shadow: 0 0 15px currentColor; }
-.skin-card h4 { font-size: 14px; margin-bottom: 12px; }
-.buy-btn { background: rgba(255, 255, 255, 0.08); border: none; color: white; padding: 8px 12px; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; font-size: 13px; }
-.buy-btn.bought { background: rgba(48, 209, 88, 0.15); color: var(--ios-green); }
-.buy-btn.equipped { background: var(--ios-blue); color: white; }
+.header-profile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+}
 
-/* Док-бар */
-.ios-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; height: 72px; background: rgba(15, 17, 26, 0.7); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); border-radius: 36px; display: flex; justify-content: space-around; align-items: center; }
-.dock-item { background: transparent; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 4px; width: 30%; cursor: pointer; }
-.dock-item span { font-size: 10px; font-weight: 500; }
-.dock-item.active { color: var(--ios-blue); }
+.user-meta p {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
 
-/* Игровой Экран */
-#screen-game { background: #020305; }
-.game-top-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-.blur-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.05); color: white; padding: 10px 18px; border-radius: 100px; backdrop-filter: blur(15px); cursor: pointer; font-weight: 500; }
-.live-score { font-weight: 700; font-size: 20px; color: var(--ios-orange); text-shadow: 0 0 15px rgba(255, 159, 10, 0.5); }
-#game-viewport { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-canvas { display: block; box-shadow: 0 0 40px rgba(0,0,0,0.8); border-radius: 16px; background: #060810; }
+.user-meta h3 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
 
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-    
+.balance-pill {
+    background: rgba(255, 214, 10, 0.12);
+    border: 1px solid rgba(255, 214, 10, 0.25);
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-weight: 700;
+    color: var(--warning);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(255, 214, 10, 0.05);
+}
+
+/* Сетка выбора аркад */
+.games-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-bottom: 10px;
+}
+
+.game-card {
+    background: var(--bg-surface);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    cursor: pointer;
+    transition: var(--ios-transition);
+}
+
+.game-card:active {
+    transform: scale(0.94);
+    background: var(--bg-surface-active);
+}
+
+.game-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+}
+
+.game-card h4 {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.game-card p {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* --- СЕЛЕКТОР МОДИФИКАЦИЙ (MODE MENU) --- */
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 26px;
+}
+
+.back-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    border: none;
+    color: var(--text-main);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: var(--ios-snap);
+}
+
+.back-circle:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.stats-badge {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.mode-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex-grow: 1;
+}
+
+.mode-btn {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    padding: 18px;
+    text-align: left;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--ios-transition);
+}
+
+.mode-btn.selected {
+    border-color: var(--accent-neon);
+    background: rgba(0, 239, 114, 0.07);
+    box-shadow: inset 0 0 15px rgba(0, 239, 114, 0.08);
+}
+
+/* --- ИГРОВОЙ ЭКРАН (HUD & VIEWPORT) --- */
+#screen-game {
+    padding: 16px;
+    background: #000000;
+}
+
+.game-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding: 0 4px;
+}
+
+.live-score {
+    font-size: 26px;
+    font-weight: 900;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    color: var(--accent-neon);
+    text-shadow: 0 0 15px var(--glow-neon);
+    letter-spacing: -0.5px;
+}
+
+.viewport-wrapper {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #04050a;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    border-radius: 20px;
+}
+
+/* --- МАРКЕТ С КИБЕР-СКИНАМИ (SKIN MARKET) --- */
+.shop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 6px;
+}
+
+.skin-card {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 22px;
+    padding: 14px 20px;
+    gap: 18px;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+.skin-preview {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.skin-card h4 {
+    flex-grow: 1;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.buy-btn {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-main);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: var(--ios-snap);
+}
+
+.buy-btn.bought {
+    background: #2C2C2E;
+    color: #8E8E93;
+}
+
+.buy-btn.equipped {
+    background: var(--accent-neon);
+    color: var(--text-dark);
+}
+
+/* --- НАВИГАЦИОННАЯ ПАНЕЛЬ СМАРТФОНА (iOS TAB BAR) --- */
+.ios-dock {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: calc(80px + var(--safe-area-bottom));
+    background: var(--bg-dock);
+    backdrop-filter: blur(35px) saturate(170%);
+    -webkit-backdrop-filter: blur(35px) saturate(170%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: var(--safe-area-bottom);
+    z-index: 90;
+}
+
+.dock-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 65px;
+    transition: var(--ios-snap);
+}
+
+.dock-item.active {
+    color: var(--accent-neon);
+}
+
+.dock-icon {
+    font-size: 22px;
+}
+
+.dock-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+}
+
+.danger-btn {
+    background: rgba(255, 55, 95, 0.08);
+    color: var(--danger);
+    border: 1px solid rgba(255, 55, 95, 0.18);
+    padding: 16px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    transition: var(--ios-transition);
+    box-shadow: 0 4px 15px rgba(255, 55, 95, 0.05);
+}
+
+.danger-btn:active {
+    transform: scale(0.96);
+    background: rgba(255, 55, 95, 0.15);
+}
+
+/* Ключевые анимации декоративных оболочек */
+@keyframes floatingOrb {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
