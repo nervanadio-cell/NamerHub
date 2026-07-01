@@ -479,4 +479,49 @@ class CyberDash {
         this.obstacles = []; this.particles = []; this.score = 0; this.alive = true; this.frame = 0;
         this.fl = () => this.flip();
         this.canvas.addEventListener('pointerdown', this.fl);
-        this.loop()
+        this.loop();
+    }
+    flip() {
+        this.player.isUp = !this.player.isUp;
+        this.player.gravity = this.player.isUp ? -0.6 : 0.6;
+        for(let i=0;i<6;i++) this.particles.push(new Particle(this.player.x, this.player.y, STATE.activeSkin));
+    }
+    loop() {
+        if(!this.alive) return; this.frame++;
+        
+        this.player.vy += this.player.gravity; this.player.y += this.player.vy;
+        if(this.player.y < 0) { this.player.y = 0; this.player.vy = 0; }
+        if(this.player.y > this.canvas.height-this.player.h) { this.player.y = this.canvas.height-this.player.h; this.player.vy = 0; }
+
+        if(this.frame % 70 === 0) {
+            let h = Math.random()*120 + 40; let pass = Math.random()>0.5;
+            this.obstacles.push({ x: this.canvas.width, y: pass ? 0 : this.canvas.height-h, w: 24, h: h });
+        }
+
+        this.ctx.fillStyle = '#060810'; this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
+
+        this.ctx.fillStyle = STATE.activeSkin;
+        this.ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
+
+        this.ctx.fillStyle = '#FF453A';
+        for(let i=this.obstacles.length-1; i>=0; i--) {
+            let o = this.obstacles[i]; o.x -= 4.5;
+            this.ctx.fillRect(o.x, o.y, o.w, o.h);
+
+            if(this.player.x < o.x + o.w && this.player.x + this.player.w > o.x &&
+               this.player.y < o.y + o.h && this.player.y + this.player.h > o.y) {
+                this.alive = false; triggerScreenShake();
+                saveBestScore('cyberdash', this.mode, this.score);
+                alert(`Краш системы! Счёт: ${this.score}`);
+                updateWallet(Math.floor(this.score/3)); navigateTo('screen-lobby'); return;
+            }
+            if(o.x + o.w < 0) { this.obstacles.splice(i,1); this.score += 10; }
+        }
+
+        this.particles.forEach((p,i) => { p.update(); p.draw(this.ctx); if(p.alpha<=0) this.particles.splice(i,1); });
+        const scr = document.getElementById('current-game-score');
+        if (scr) scr.innerText = this.score;
+        requestAnimationFrame(()=>this.loop());
+    }
+    destroy() { this.alive = false; this.canvas.removeEventListener('pointerdown', this.fl); }
+}
