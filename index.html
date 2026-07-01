@@ -2,127 +2,604 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS // Arcade Ultra</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nexus Arcade Platform</title>
+    <style>
+        /* ============================================================================
+           NEXUS PREMIUM CYBER-iOS DESIGN SYSTEM (CORE STYLES)
+           ============================================================================ */
+        
+        :root {
+            --bg-base: #060810;
+            --bg-surface: rgba(18, 22, 38, 0.7);
+            --bg-surface-blur: rgba(10, 12, 22, 0.4);
+            --accent: #00EF72;
+            --accent-glow: rgba(0, 239, 114, 0.25);
+            --text-main: #FFFFFF;
+            --text-muted: #8E8E93;
+            --danger: #FF375F;
+            --warning: #FFD60A;
+            --ios-transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Roboto, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Глобальный контейнер с эффектом тряски (Screen Shake Engine) */
+        #game-root-container {
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            background: radial-gradient(circle at 50% 0%, #161a30 0%, var(--bg-base) 70%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
+        }
+
+        @media (min-width: 481px) {
+            #game-root-container {
+                height: 92vh;
+                border-radius: 40px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+        }
+
+        /* Тряска экрана при повреждениях/взрывах */
+        @keyframes isometricShake {
+            0% { transform: translate(0, 0) scale(1); }
+            20% { transform: translate(-6px, 4px) rotate(-0.5deg); }
+            40% { transform: translate(6px, -4px) rotate(1deg); }
+            60% { transform: translate(-4px, -2px) rotate(-1deg); }
+            80% { transform: translate(4px, 4px) scale(0.99); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        #game-root-container.shake {
+            animation: isometricShake 0.28s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        /* --- АРХИТЕКТУРА ЭКРАНОВ (SCREENS) --- */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+            opacity: 0;
+            transform: scale(1.04);
+            transition: var(--ios-transition);
+            padding: 24px 20px;
+            padding-bottom: calc(90px + var(--safe-area-bottom));
+        }
+
+        .screen.active {
+            display: flex;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* --- ЭКРАН 1: АВТОРИЗАЦИЯ (ВХОД) --- */
+        #screen-login {
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: var(--bg-base);
+            padding-bottom: 24px;
+        }
+
+        .brand-logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .brand-logo .logo-icon {
+            font-size: 54px;
+            text-shadow: 0 0 30px var(--accent-glow);
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+
+        .brand-logo h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-top: 12px;
+            background: linear-gradient(180deg, #FFF 0%, var(--text-muted) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-card {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 14px 16px;
+            color: #FFF;
+            font-size: 16px;
+            outline: none;
+            transition: var(--ios-transition);
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .prime-btn {
+            width: 100%;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--ios-transition);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .prime-btn:active {
+            transform: scale(0.96);
+            opacity: 0.85;
+        }
+
+        /* --- ВНУТРЕННИЕ ВКЛАДКИ (TAB PAGES) --- */
+        .tab-page {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-page.active {
+            display: flex;
+        }
+
+        /* Хедер профиля */
+        .header-profile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .user-meta h3 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .user-meta p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .balance-pill {
+            background: rgba(255, 214, 10, 0.15);
+            border: 1px solid rgba(255, 214, 10, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: var(--warning);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Сетка игр в лобби */
+        .games-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .game-card {
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 22px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            cursor: pointer;
+            transition: var(--ios-transition);
+        }
+
+        .game-card:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .game-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+        }
+
+        .game-card h4 { font-size: 16px; font-weight: 600; }
+        .game-card p { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+
+        /* --- ЭКРАН 2: ВЫБОР МОДИФИКАЦИИ --- */
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .back-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #FFF;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mode-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+            flex-grow: 1;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: left;
+            color: #FFF;
+            cursor: pointer;
+            transition: var(--ios-transition);
+        }
+
+        .mode-btn.selected {
+            border-color: var(--accent);
+            background: rgba(0, 239, 114, 0.06);
+            box-shadow: inset 0 0 15px rgba(0, 239, 114, 0.1);
+        }
+
+        .stats-badge {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        /* --- ЭКРАН 3: ИГРОВАЯ СЕССИЯ --- */
+        #screen-game {
+            padding: 16px;
+            background: #000;
+        }
+
+        .game-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .live-score {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: monospace;
+            color: var(--accent);
+        }
+
+        .viewport-wrapper {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #060810;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            background-color: #060810;
+            display: block;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        /* --- МАГАЗИН СКИНОВ (SHOP) --- */
+        .shop-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 8px;
+        }
+
+        .skin-card {
+            display: flex;
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+            padding: 12px 16px;
+            gap: 16px;
+        }
+
+        .skin-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .skin-card h4 { flex-grow: 1; font-size: 15px; }
+
+        .buy-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #FFF;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--ios-transition);
+        }
+
+        .buy-btn.bought { background: #3A3A3C; color: #AEAEB2; }
+        .buy-btn.equipped { background: var(--accent); color: #000; font-weight: 700; }
+
+        /* --- НАВИГАЦИОННЫЙ ДОК (iOS TAB BAR) --- */
+        .ios-dock {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: calc(76px + var(--safe-area-bottom));
+            background: var(--bg-surface-blur);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: var(--safe-area-bottom);
+            z-index: 90;
+        }
+
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            width: 60px;
+            transition: var(--ios-transition);
+        }
+
+        .dock-item.active {
+            color: var(--accent);
+        }
+
+        .dock-icon { font-size: 20px; }
+        .dock-label { font-size: 10px; font-weight: 500; }
+
+        .danger-btn {
+            background: rgba(255, 55, 95, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 55, 95, 0.2);
+            padding: 12px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: auto;
+        }
+
+        /* Дополнительные анимации пульсации */
+        @keyframes pulseGlow {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.03); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+    </style>
 </head>
 <body>
 
-    <div id="app">
-        <section id="screen-auth" class="screen active">
-            <div class="glass-card auth-box">
-                <div class="apple-logo"><i class="fa-solid fa-gamepad"></i></div>
-                <h1>NEXUS ID</h1>
-                <p class="subtitle">Войдите в игровую экосистему</p>
-                <div class="input-group">
-                    <input type="text" id="username-input" placeholder="Имя игрока..." autocomplete="off">
-                </div>
-                <button id="login-btn" class="ios-btn primary">Войти в Лобби</button>
+    <div id="game-root-container">
+
+        <div id="screen-login" class="screen active">
+            <div class="brand-logo">
+                <div class="logo-icon">🪐</div>
+                <h1>NEXUS ARCADE</h1>
             </div>
-        </section>
-
-        <section id="screen-lobby" class="screen">
-            <header class="ios-header">
-                <div class="user-badge">
-                    <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
-                    <span id="player-name">Player</span>
+            <div class="login-card">
+                <div class="input-group">
+                    <label>Идентификатор Пилота</label>
+                    <input type="text" id="username-input" placeholder="Введите никнейм..." autocomplete="off">
                 </div>
-                <div class="balance-badge">
-                    <i class="fa-solid fa-coins" style="color: #FFD60A;"></i>
-                    <span id="player-coins">0</span>
-                </div>
-            </header>
+                <button id="login-btn" class="prime-btn">Синхронизировать</button>
+            </div>
+        </div>
 
-            <main class="lobby-content">
-                <div id="tab-games" class="tab-page active">
-                    <h2 class="section-title">Игры <span class="game-count">4 / 30</span></h2>
-                    <div class="games-grid">
-                        
-                        <div class="game-card" data-game="snake">
-                            <div class="game-cover snake-cover"><i class="fa-solid fa-staff-snake"></i></div>
-                            <div class="game-info">
-                                <h3>Neon Snake 2.0</h3>
-                                <p>Частицы, бонусы, стены</p>
-                                <span class="tag tag-senior">Juiced</span>
-                            </div>
-                        </div>
-
-                        <div class="game-card" data-game="reactor">
-                            <div class="game-cover reactor-cover"><i class="fa-solid fa-bolt"></i></div>
-                            <div class="game-info">
-                                <h3>Tap Reactor Chaos</h3>
-                                <p>Комбо, бомбы, множители</p>
-                                <span class="tag tag-senior">Crazy</span>
-                            </div>
-                        </div>
-
-                        <div class="game-card" data-game="blockblast">
-                            <div class="game-cover block-cover"><i class="fa-solid fa-cubes"></i></div>
-                            <div class="game-info">
-                                <h3>Block Blast Arcade</h3>
-                                <p>Уничтожай ряды блоков</p>
-                                <span class="tag tag-new">New</span>
-                            </div>
-                        </div>
-
-                        <div class="game-card" data-game="cyberdash">
-                            <div class="game-cover dash-cover"><i class="fa-solid fa-jet-fighter-up"></i></div>
-                            <div class="game-info">
-                                <h3>Cyber Dash</h3>
-                                <p>Гравитационный хардкор</p>
-                                <span class="tag tag-new">Ultra</span>
-                            </div>
-                        </div>
-
+        <div id="screen-lobby" class="screen">
+            
+            <div id="tab-games" class="tab-page active">
+                <div class="header-profile">
+                    <div class="user-meta">
+                        <p>Приветствуем,</p>
+                        <h3 id="player-name">User</h3>
+                    </div>
+                    <div class="balance-pill">
+                        <span>🪙</span>
+                        <span id="player-coins">0</span>
                     </div>
                 </div>
 
-                <div id="tab-shop" class="tab-page">
-                    <h2 class="section-title">Скины Экосистемы</h2>
-                    <div class="shop-grid" id="skins-container"></div>
+                <div class="games-grid">
+                    <div class="game-card" data-game="snake">
+                        <div class="game-icon" style="background: rgba(0, 239, 114, 0.1); color: #00EF72;">🐍</div>
+                        <h4>Senior Snake</h4>
+                        <p>Классический симулятор поглощения кода с физикой частиц.</p>
+                    </div>
+                    <div class="game-card" data-game="reactor">
+                        <div class="game-icon" style="background: rgba(10, 132, 255, 0.1); color: #0A84FF;">⚡</div>
+                        <h4>Tap Reactor</h4>
+                        <p>Реактивный тест на скорость клика в условиях энерго-хаоса.</p>
+                    </div>
+                    <div class="game-card" data-game="blockblast">
+                        <div class="game-icon" style="background: rgba(191, 90, 242, 0.1); color: #BF5AF2;">🧩</div>
+                        <h4>Block Blast</h4>
+                        <p>Очищайте заполняющуюся матрицу блоков деструктивными кликами.</p>
+                    </div>
+                    <div class="game-card" data-game="cyberdash">
+                        <div class="game-icon" style="background: rgba(255, 159, 10, 0.1); color: #FF9F0A;">☄️</div>
+                        <h4>Cyber Dash</h4>
+                        <p>Управление гравитационным вектором в неоновом потоке.</p>
+                    </div>
                 </div>
-            </main>
+            </div>
 
-            <nav class="ios-dock">
+            <div id="tab-shop" class="tab-page">
+                <div class="header-profile">
+                    <div class="user-meta">
+                        <p>Кастомизация</p>
+                        <h3>Маркетплейс</h3>
+                    </div>
+                </div>
+                <div id="skins-container" class="shop-grid">
+                    </div>
+            </div>
+
+            <div id="tab-profile" class="tab-page">
+                <div class="header-profile">
+                    <div class="user-meta">
+                        <p>Ядро Системы</p>
+                        <h3>Конфигурация</h3>
+                    </div>
+                </div>
+                <div class="stats-badge" style="flex-direction: column; gap: 8px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--text-muted)">Локальный кэш:</span>
+                        <span style="color:var(--accent)">localStorage ACTIVE</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--text-muted)">Синхронизация:</span>
+                        <span>Автономная (Без Сервера)</span>
+                    </div>
+                </div>
+                <button id="logout-btn" class="danger-btn">Сбросить данные и выйти</button>
+            </div>
+
+            <div class="ios-dock">
                 <button class="dock-item active" data-tab="tab-games">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <span>Лобби</span>
+                    <div class="dock-icon">🎮</div>
+                    <div class="dock-label">Аркада</div>
                 </button>
                 <button class="dock-item" data-tab="tab-shop">
-                    <i class="fa-solid fa-bag-shopping"></i>
-                    <span>Скины</span>
+                    <div class="dock-icon">🛍️</div>
+                    <div class="dock-label">Магазин</div>
                 </button>
-                <button class="dock-item" id="logout-btn">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Выход</span>
+                <button class="dock-item" data-tab="tab-profile">
+                    <div class="dock-icon">⚙️</div>
+                    <div class="dock-label">Опции</div>
                 </button>
-            </nav>
-        </section>
-
-        <section id="screen-mode-select" class="screen">
-            <div class="glass-card mode-box">
-                <h2 id="mode-title">Выбор режима</h2>
-                <p class="best-score">Ваш рекорд: <span id="mode-best-score">0</span></p>
-                <div class="mode-options" id="mode-options-container">
-                    </div>
-                <button id="start-game-final-btn" class="ios-btn primary">Запуск</button>
-                <button id="back-to-lobby-btn" class="ios-btn secondary">Назад в лобби</button>
             </div>
-        </section>
 
-        <section id="screen-game" class="screen">
-            <div id="game-root-container">
-                <div class="game-top-bar">
-                    <button id="exit-game-btn" class="blur-btn"><i class="fa-solid fa-chevron-left"></i> Лобби</button>
-                    <div class="live-score">Счёт: <span id="current-game-score">0</span></div>
+        </div>
+
+        <div id="screen-mode-select" class="screen">
+            <div class="header-nav">
+                <button id="back-to-lobby-btn" class="back-circle">‹</button>
+                <h3 id="mode-title">Nexus // Выбор режима</h3>
+            </div>
+            
+            <div class="stats-badge">
+                <span style="color: var(--text-muted);">Лучший результат на этом ядре:</span>
+                <strong id="mode-best-score" style="color: var(--warning);">0</strong>
+            </div>
+
+            <div id="mode-options-container" class="mode-list">
                 </div>
-                <div id="game-viewport"></div>
+
+            <button id="start-game-final-btn" class="prime-btn" style="margin-top: auto;">Инициализировать запуск</button>
+        </div>
+
+        <div id="screen-game" class="screen">
+            <div class="game-top-bar">
+                <button id="exit-game-btn" class="back-circle" style="background: rgba(255,55,95,0.15); color: var(--danger);">✕</button>
+                <div class="live-score">SCORE: <span id="current-game-score">0</span></div>
             </div>
-        </section>
+            <div class="viewport-wrapper" id="game-viewport">
+                </div>
+        </div>
+
     </div>
 
-    <script src="games.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
