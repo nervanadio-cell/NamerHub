@@ -1,425 +1,459 @@
-// ==========================================
-// NEXUS ARCADE ENGINE // ДВИЖКИ ИГР И ЭФФЕКТЫ
-// ==========================================
+/**
+ * @file games.js
+ * @description Модульный хаб игровых движков для Arcade Hub.
+ * Реализует паттерн «Фабрика» и полиморфную архитектуру игр на базе единого жизненного цикла.
+ * Включает премиальный движок игры Block Blast с адаптивным сенсорным управлением.
+ * @version 1.0.0
+ */
 
-// --- СИСТЕМА ЧАСТИЦ (JUICE FX) ---
-class Particle {
-    constructor(x, y, color) {
-        this.x = x; 
-        this.y = y; 
-        this.color = color;
-        this.vx = (Math.random() - 0.5) * 8;
-        this.vy = (Math.random() - 0.5) * 8;
-        this.radius = Math.random() * 3 + 2;
-        this.alpha = 1;
-        this.decay = Math.random() * 0.02 + 0.015;
+'use strict';
+
+/**
+ * 1. АБСТРАКТНЫЙ КЛАСС ИГРЫ (КОНТРАКТ ЖИЗНЕННОГО ЦИКЛА)
+ * Все игры платформы обязаны наследоваться от этого класса.
+ */
+class BaseGame {
+    constructor(canvas, context) {
+        if (this.constructor === BaseGame) {
+            throw new TypeError('Нельзя инициализировать абстрактный класс BaseGame напрямую.');
+        }
+        this.canvas = canvas;
+        this.ctx = context;
+        this.isRunning = false;
     }
-    update() { 
-        this.x += this.vx; 
-        this.y += this.vy; 
-        this.alpha -= this.decay; 
-    }
-    draw(ctx) {
-        ctx.save(); 
-        ctx.globalAlpha = this.alpha; 
-        ctx.fillStyle = this.color;
-        ctx.shadowColor = this.color; 
-        ctx.shadowBlur = 10; 
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
-        ctx.fill(); 
-        ctx.restore();
-    }
+
+    /** Инициализация ресурсов и подписка на события ввода */
+    init() { throw new Error('Метод init() должен быть реализован в подклассе.'); }
+    
+    /** Запуск игрового процесса */
+    start() { throw new Error('Метод start() должен быть реализован в подклассе.'); }
+    
+    /** Остановка игрового процесса (пауза или выход) */
+    stop() { throw new Error('Метод stop() должен быть реализован в подклассе.'); }
+    
+    /** Уничтожение инстанса, очистка слушателей памяти (Предотвращает Memory Leaks) */
+    destroy() { throw new Error('Метод destroy() должен быть реализован в подклассе.'); }
 }
 
-// --- 1. СНЕЙК (SENIOR SNAKE) ---
-class SeniorSnake {
-    constructor(canvas, mode) {
-        this.canvas = canvas; 
-        this.ctx = canvas.getContext('2d'); 
-        this.mode = mode;
-        this.gridSize = 20; 
-        this.tile = canvas.width / this.gridSize;
-        this.snake = [{x: 10, y: 10}]; 
-        this.dir = {x: 1, y: 0}; 
-        this.nextDir = {x: 1, y: 0};
-        this.apple = {x: 5, y: 5}; 
-        this.particles = []; 
+/**
+ * 2. ДВИЖОК ИГРЫ BLOCK BLAST (GRID BLOCK PUZZLE)
+ * Высокотехнологичная реализация популярной аркады на сетке 8x8.
+ */
+class BlockBlastGame extends BaseGame {
+    constructor(canvas, context) {
+        super(canvas, context);
+        
+        // Параметры геометрии сетки
+        this.gridSize = 8;
+        this.cellSize = 40; // 8 * 40 = 320px (ширина игрового поля)
+        this.gridOffsetX = 40; // Центрирование на canvas 400px (40 + 320 + 40)
+        this.gridOffsetY = 20;
+        
+        // Состояние игрового поля
+        this.grid = [];
+        this.availableShapes = [];
+        this.selectedShapeIndex = -1;
+        
+        // Пул геометрических фигур (Tetromino/Block варианты)
+        this.shapesRegistry = [
+            { id: '1x1', matrix: [[1]], color: '#FF9500' },
+            { id: '1x2', matrix: [[1, 1]], color: '#FF2D55' },
+            { id: '2x1', matrix: [[1], [1]], color: '#FF2D55' },
+            { id: '2x2', matrix: [[1, 1], [1, 1]], color: '#5AC8FA' },
+            { id: '1x3', matrix: [[1, 1, 1]], color: '#4CD964' },
+            { id: '3x1', matrix: [[1], [1], [1]], color: '#4CD964' },
+            { id: 'L_left', matrix: [[1, 0], [1, 0], [1, 1]], color: '#5856D6' },
+            { id: 'L_right', matrix: [[0, 1], [0, 1], [1, 1]], color: '#5856D6' },
+            { id: '3x3_corner', matrix: [[1, 1, 1], [1, 0, 0], [1, 0, 0]], color: '#FFCC00' }
+        ];
+
+        // Координаты зон выбора фигур (внизу экрана)
+        this.slotsY = 340;
+        this.slots = [
+            { x: 70, width: 60, height: 50 },
+            { x: 200, width: 60, height: 50 },
+            { x: 330, width: 60, height: 50 }
+        ];
+
         this.score = 0;
-        this.speed = 120; 
-        this.lastTick = 0; 
-        this.alive = true;
-        this.skinColor = STATE.activeSkin; 
-        this.spawnApple(); 
-        this.bind();
-        this.loop(0);
+        this._boundClickHandler = this._handleClick.bind(this);
     }
-    bind() {
-        this.kd = e => {
-            const k = e.key.toLowerCase();
-            if ((k === 'arrowup' || k === 'w' || k === 'ц') && this.dir.y === 0) this.nextDir = {x: 0, y: -1};
-            if ((k === 'arrowdown' || k === 's' || k === 'ы') && this.dir.y === 0) this.nextDir = {x: 0, y: 1};
-            if ((k === 'arrowleft' || k === 'a' || k === 'ф') && this.dir.x === 0) this.nextDir = {x: -1, y: 0};
-            if ((k === 'arrowright' || k === 'd' || k === 'в') && this.dir.x === 0) this.nextDir = {x: 1, y: 0};
-        };
-        window.addEventListener('keydown', this.kd);
-    }
-    spawnApple() {
-        this.apple.x = Math.floor(Math.random() * this.gridSize);
-        this.apple.y = Math.floor(Math.random() * this.gridSize);
-    }
-    loop(t) {
-        if(!this.alive) return;
-        if(t - this.lastTick > this.speed) {
-            this.lastTick = t; 
-            this.dir = this.nextDir;
-            let head = {x: this.snake[0].x + this.dir.x, y: this.snake[0].y + this.dir.y};
 
-            if(this.mode === 'classic') {
-                if(head.x < 0) head.x = this.gridSize - 1; 
-                if(head.x >= this.gridSize) head.x = 0;
-                if(head.y < 0) head.y = this.gridSize - 1; 
-                if(head.y >= this.gridSize) head.y = 0;
-            } else {
-                if(head.x < 0 || head.x >= this.gridSize || head.y < 0 || head.y >= this.gridSize) { 
-                    this.gameOver(); 
-                    return; 
-                }
-            }
-
-            for(let p of this.snake) { 
-                if(p.x === head.x && p.y === head.y) { 
-                    this.gameOver(); 
-                    return; 
-                } 
-            }
-            this.snake.unshift(head);
-
-            if(head.x === this.apple.x && head.y === this.apple.y) {
-                this.score++; 
-                const scr = document.getElementById('current-game-score');
-                if (scr) scr.innerText = this.score;
-                triggerScreenShake();
-                for(let i = 0; i < 15; i++) {
-                    this.particles.push(new Particle(this.apple.x * this.tile + this.tile / 2, this.apple.y * this.tile + this.tile / 2, '#FFD60A'));
-                }
-                this.spawnApple();
-                if(this.speed > 60) this.speed -= 2;
-            } else { 
-                this.snake.pop(); 
-            }
-        }
-
-        this.ctx.fillStyle = '#060810'; 
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    init() {
+        // Сброс матрицы поля (0 - пусто, строка цвета - блок занят)
+        this.grid = Array(this.gridSize).fill(null).map(() => Array(this.gridSize).fill(0));
+        this.availableShapes = [];
+        this.selectedShapeIndex = -1;
+        this.score = 0;
+        this._updateScoreUI();
         
-        this.ctx.fillStyle = '#FFD60A'; 
-        this.ctx.beginPath();
-        this.ctx.arc(this.apple.x * this.tile + this.tile / 2, this.apple.y * this.tile + this.tile / 2, this.tile * 0.4, 0, Math.PI * 2); 
-        this.ctx.fill();
+        // Генерация первой тройки фигур
+        this._replenishShapes();
 
-        this.ctx.fillStyle = this.skinColor;
-        this.snake.forEach(p => this.ctx.fillRect(p.x * this.tile + 1, p.y * this.tile + 1, this.tile - 2, this.tile - 2));
+        // Подключаем унифицированный указатель (поддерживает мышь и тачскрин смартфона одинаково быстро)
+        this.canvas.addEventListener('pointerdown', this._boundClickHandler);
+    }
 
-        this.particles.forEach((p, i) => { 
-            p.update(); 
-            p.draw(this.ctx); 
-            if(p.alpha <= 0) this.particles.splice(i, 1); 
-        });
+    start() {
+        this.isRunning = true;
+        this._render();
+    }
 
-        requestAnimationFrame((time) => this.loop(time));
+    stop() {
+        this.isRunning = false;
     }
-    gameOver() {
-        this.alive = false; 
-        triggerScreenShake();
-        saveBestScore('snake', this.mode, this.score);
-        alert(`Игра Окончена! Заработано очков: ${this.score}`);
-        updateWallet(this.score); 
-        navigateTo('screen-lobby');
-    }
-    destroy() { 
-        this.alive = false; 
-        window.removeEventListener('keydown', this.kd); 
-    }
-}
 
-// --- 2. РЕАКТОР (TAP REACTOR) ---
-class TapReactor {
-    constructor(canvas, mode) {
-        this.canvas = canvas; 
-        this.ctx = canvas.getContext('2d'); 
-        this.mode = mode;
-        this.circles = []; 
-        this.particles = []; 
-        this.score = 0; 
-        this.alive = true;
-        this.tp = (e) => this.tap(e);
-        this.canvas.addEventListener('pointerdown', this.tp);
-        this.spawn(); 
-        this.loop();
+    destroy() {
+        this.stop();
+        this.canvas.removeEventListener('pointerdown', this._boundClickHandler);
     }
-    spawn() {
-        if(!this.alive) return;
-        let type = 'normal'; 
-        let color = STATE.activeSkin;
-        if(this.mode === 'chaos') {
-            let r = Math.random();
-            if(r < 0.15) { type = 'bomb'; color = '#FF453A'; }
-            else if(r < 0.3) { type = 'gold'; color = '#FFD60A'; }
+
+    /** Генерация 3 случайных фигур в слоты */
+    _replenishShapes() {
+        this.availableShapes = [];
+        for (let i = 0; i < 3; i++) {
+            const randomType = this.shapesRegistry[Math.floor(Math.random() * this.shapesRegistry.length)];
+            // Глубокое копирование объекта фигуры
+            this.availableShapes.push({
+                ...randomType,
+                matrix: randomType.matrix.map(row => [...row])
+            });
         }
-        this.circles.push({
-            x: Math.random() * (this.canvas.width - 60) + 30, 
-            y: Math.random() * (this.canvas.height - 60) + 30,
-            radius: 0, 
-            maxRadius: 35, 
-            color: color, 
-            type: type, 
-            life: 100
-        });
-        setTimeout(() => this.spawn(), Math.random() * 500 + 300);
     }
-    tap(e) {
+
+    /** Обработчик тапов/кликов с точной декомпозицией координат */
+    _handleClick(event) {
+        if (!this.isRunning) return;
+
+        // Корректный расчет координат клика относительно масштабированного Canvas
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left; 
-        const y = e.clientY - rect.top;
-        for(let i = this.circles.length - 1; i >= 0; i--) {
-            let c = this.circles[i];
-            if(Math.hypot(x - c.x, y - c.y) <= c.maxRadius) {
-                this.circles.splice(i, 1); 
-                triggerScreenShake();
-                for(let k = 0; k < 20; k++) this.particles.push(new Particle(c.x, c.y, c.color));
-                
-                if(c.type === 'bomb') { 
-                    this.score = Math.max(0, this.score - 10); 
-                } else if(c.type === 'gold') { 
-                    this.score += 5; 
-                    updateWallet(5); 
-                } else { 
-                    this.score += 2; 
+        const clientX = event.clientX - rect.left;
+        const clientY = event.clientY - rect.top;
+        
+        // Переводим пиксели окна в виртуальные пиксели canvas (400x400)
+        const canvasX = (clientX / rect.width) * this.canvas.width;
+        const canvasY = (clientY / rect.height) * this.canvas.height;
+
+        // Зона 1: Клик по нижним слотам выбора фигур
+        if (canvasY >= 320) {
+            for (let i = 0; i < this.availableShapes.length; i++) {
+                if (!this.availableShapes[i]) continue;
+                const slot = this.slots[i];
+                // Проверяем попадание в радиус слота фигурки
+                if (Math.abs(canvasX - slot.x) < 40 && Math.abs(canvasY - this.slotsY) < 30) {
+                    this.selectedShapeIndex = (this.selectedShapeIndex === i) ? -1 : i; // Toggle выбор
+                    this._render();
+                    if (window.store && store.get('settings.vibration') && navigator.vibrate) {
+                        navigator.vibrate(10);
+                    }
+                    return;
                 }
+            }
+        } 
+        // Зона 2: Клик по игровому полю (попытка выставить выбранную фигуру)
+        else if (this.selectedShapeIndex !== -1) {
+            const cellX = Math.floor((canvasX - this.gridOffsetX) / this.cellSize);
+            const cellY = Math.floor((canvasY - this.gridOffsetY) / this.cellSize);
+
+            // Если кликнули в пределах матрицы поля
+            if (cellX >= 0 && cellX < this.gridSize && cellY >= 0 && cellY < this.gridSize) {
+                const currentShape = this.availableShapes[this.selectedShapeIndex];
                 
-                const scr = document.getElementById('current-game-score');
-                if (scr) scr.innerText = this.score;
-                return;
+                if (this._canPlaceShape(currentShape.matrix, cellX, cellY)) {
+                    this._placeShape(currentShape, cellX, cellY);
+                    this.availableShapes[this.selectedShapeIndex] = null; // Очищаем использованный слот
+                    this.selectedShapeIndex = -1;
+
+                    // Если все 3 фигуры выставлены — генерируем новые 3
+                    if (this.availableShapes.every(shape => shape === null)) {
+                        this._replenishShapes();
+                    }
+
+                    this._checkLinesAndClear();
+                    this._render();
+
+                    // Проверка на Game Over
+                    if (this._checkGameOver()) {
+                        this._triggerGameOver();
+                    }
+                }
             }
         }
     }
-    loop() {
-        if(!this.alive) return;
-        this.ctx.fillStyle = '#060810'; 
+
+    /** Валидация возможности размещения матрицы фигуры в указанную координату сетки */
+    _canPlaceShape(matrix, targetX, targetY) {
+        for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+                if (matrix[r][c] === 1) {
+                    const gridX = targetX + c;
+                    const gridY = targetY + r;
+
+                    // Выход за границы игрового поля
+                    if (gridX < 0 || gridX >= this.gridSize || gridY < 0 || gridY >= this.gridSize) {
+                        return false;
+                    }
+                    // Клетка уже занята другим блоком
+                    if (this.grid[gridY][gridX] !== 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Фиксация фигуры на поле */
+    _placeShape(shape, targetX, targetY) {
+        let placedBlocksCount = 0;
+        for (let r = 0; r < shape.matrix.length; r++) {
+            for (let c = 0; c < shape.matrix[r].length; c++) {
+                if (shape.matrix[r][c] === 1) {
+                    this.grid[targetY + r][targetX + c] = shape.color;
+                    placedBlocksCount++;
+                }
+            }
+        }
+        this.score += placedBlocksCount;
+        if (window.store) store.addBalance(1); // 1 монета за каждый установленный кубик
+        this._updateScoreUI();
+    }
+
+    /** Сканирование поля на заполненные горизонтальные и вертикальные линии */
+    _checkLinesAndClear() {
+        let rowsToClear = [];
+        let colsToClear = [];
+
+        // Проверка строк
+        for (let r = 0; r < this.gridSize; r++) {
+            if (this.grid[r].every(cell => cell !== 0)) {
+                rowsToClear.push(r);
+            }
+        }
+
+        // Проверка столбцов
+        for (let c = 0; c < this.gridSize; c++) {
+            let isColFull = true;
+            for (let r = 0; r < this.gridSize; r++) {
+                if (this.grid[r][c] === 0) {
+                    isColFull = false;
+                    break;
+                }
+            }
+            if (isColFull) colsToClear.push(c);
+        }
+
+        // Очистка и начисление очков (комбо увеличивает награду экспоненциально)
+        const totalLines = rowsToClear.length + colsToClear.length;
+        if (totalLines > 0) {
+            rowsToClear.forEach(r => {
+                for (let c = 0; c < this.gridSize; c++) this.grid[r][c] = 0;
+            });
+
+            colsToClear.forEach(c => {
+                for (let r = 0; r < this.gridSize; r++) this.grid[r][c] = 0;
+            });
+
+            this.score += totalLines * 20;
+            if (window.store) store.addBalance(totalLines * 10); // Бонусные монеты за взрыв линий
+            this._updateScoreUI();
+
+            if (window.store && store.get('settings.vibration') && navigator.vibrate) {
+                navigator.vibrate([30, 20, 30]); // Двойной импульс взрыва блоков
+            }
+        }
+    }
+
+    /** Алгоритм проверки мата (Game Over) */
+    _checkGameOver() {
+        // Ищем хотя бы одну доступную фигуру
+        for (let i = 0; i < this.availableShapes.length; i++) {
+            const shape = this.availableShapes[i];
+            if (!shape) continue;
+
+            // Пробуем перебрать всю доску 8x8, встанет ли она куда-нибудь
+            for (let r = 0; r < this.gridSize; r++) {
+                for (let c = 0; c < this.gridSize; c++) {
+                    if (this._canPlaceShape(shape.matrix, c, r)) {
+                        return false; // Найдено валидное место, игра продолжается
+                    }
+                }
+            }
+        }
+        return true; // Ни одна фигура не помещается на доску
+    }
+
+    _updateScoreUI() {
+        const scoreEl = document.getElementById('live-score');
+        if (scoreEl) scoreEl.textContent = `Счет: ${this.score}`;
+    }
+
+    _triggerGameOver() {
+        this.stop();
+        if (window.store) {
+            const currentHighScore = store.get('highScores.blockblast') || 0;
+            let recordMsg = '';
+            if (this.score > currentHighScore) {
+                store.set('highScores.blockblast', this.score);
+                recordMsg = '\nНОВЫЙ РЕКОРД НА ПЛАТФОРМЕ!';
+            }
+            alert(`БЛОК БЛАСТ: ИГРА ОКОНЧЕНА!\nНабрано очков: ${this.score}${recordMsg}`);
+        }
+        if (window.ui) ui.navigateTo('lobby');
+    }
+
+    /** ОТРИСОВКА (RENDER GRAPHICS) НА CANVAS */
+    _render() {
+        if (!this.isRunning) return;
+
+        // 1. Очистка подложки игрового экрана
+        this.ctx.fillStyle = '#11141a';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        for(let i = this.circles.length - 1; i >= 0; i--) {
-            let c = this.circles[i]; 
-            if(c.radius < c.maxRadius) c.radius += 2.5;
-            c.life -= 0.8;
-            if(c.life <= 0) { 
-                this.circles.splice(i, 1); 
-                if(c.type === 'normal' && this.mode === 'chaos') this.score = Math.max(0, this.score - 2); 
-                continue; 
-            }
+        // 2. Отрисовка основной сетки 8x8
+        for (let r = 0; r < this.gridSize; r++) {
+            for (let c = 0; c < this.gridSize; c++) {
+                const cellVal = this.grid[r][c];
+                const x = this.gridOffsetX + c * this.cellSize;
+                const y = this.gridOffsetY + r * this.cellSize;
 
-            this.ctx.save(); 
-            this.ctx.globalAlpha = c.life / 100; 
-            this.ctx.fillStyle = c.color;
-            this.ctx.beginPath(); 
-            this.ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2); 
-            this.ctx.fill();
-            if(c.type === 'bomb') { 
-                this.ctx.fillStyle = '#000'; 
-                this.ctx.font = '14px sans-serif'; 
-                this.ctx.fillText('💣', c.x - 7, c.y + 5); 
+                if (cellVal === 0) {
+                    // Пустые клетки — высококлассный Glassmorphic-дизайн со скошенными гранями
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4, 6);
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.01)';
+                    this.ctx.stroke();
+                } else {
+                    // Занятые ячейки с внутренним свечением
+                    this.ctx.fillStyle = cellVal;
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(x + 1, y + 1, this.cellSize - 2, this.cellSize - 2, 6);
+                    this.ctx.fill();
+                }
             }
-            this.ctx.restore();
         }
 
-        this.particles.forEach((p, i) => { 
-            p.update(); 
-            p.draw(this.ctx); 
-            if(p.alpha <= 0) this.particles.splice(i, 1); 
-        });
-        const scr = document.getElementById('current-game-score');
-        if (scr) scr.innerText = this.score;
-        saveBestScore('reactor', this.mode, this.score);
-        requestAnimationFrame(() => this.loop());
-    }
-    destroy() { 
-        this.alive = false; 
-        this.canvas.removeEventListener('pointerdown', this.tp); 
-    }
-}
+        // 3. Рендеринг нижнего дока с доступными фигурами
+        for (let i = 0; i < this.availableShapes.length; i++) {
+            const shape = this.availableShapes[i];
+            if (!shape) continue;
 
-// --- 3. БЛОК БЛАСТ (BLOCK BLAST) ---
-class BlockBlast {
-    constructor(canvas, mode) {
-        this.canvas = canvas; 
-        this.ctx = canvas.getContext('2d'); 
-        this.mode = mode;
-        this.cols = 8; 
-        this.rows = 8; 
-        this.w = canvas.width / this.cols;
-        this.grid = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
-        this.particles = []; 
-        this.score = 0; 
-        this.alive = true;
-        this.spawnBlockTimer = 0;
-        this.cl = (e) => this.click(e);
-        this.canvas.addEventListener('pointerdown', this.cl);
-        this.loop();
-    }
-    click(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const cx = Math.floor((e.clientX - rect.left) / this.w);
-        const cy = Math.floor((e.clientY - rect.top) / this.w);
-        
-        if(cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows && this.grid[cy][cx]) {
-            let color = this.grid[cy][cx]; 
-            this.grid[cy][cx] = null;
-            this.score += 10; 
-            triggerScreenShake();
-            for(let i = 0; i < 12; i++) {
-                this.particles.push(new Particle(cx * this.w + this.w / 2, cy * this.w + this.w / 2, color));
+            const slot = this.slots[i];
+            const isSelected = (this.selectedShapeIndex === i);
+
+            // Если фигура выбрана тапом — рисуем вокруг слота неоновый ореол пульсации
+            if (isSelected) {
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = '#007aff';
+                this.ctx.strokeStyle = 'rgba(0, 122, 255, 0.6)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.roundRect(slot.x - 30, this.slotsY - 25, 60, 50, 12);
+                this.ctx.stroke();
+                this.ctx.shadowBlur = 0; // Сброс тени
+                this.ctx.lineWidth = 1;
             }
-            this.checkLines();
-        }
-    }
-    checkLines() {
-        for(let r = 0; r < this.rows; r++) {
-            let empty = true; 
-            for(let c = 0; c < this.cols; c++) { 
-                if(this.grid[r][c]) empty = false; 
-            }
-            if(empty) { this.score += 50; }
-        }
-    }
-    loop() {
-        if(!this.alive) return;
-        this.spawnBlockTimer++;
-        if(this.spawnBlockTimer > 40) {
-            this.spawnBlockTimer = 0;
-            let rx = Math.floor(Math.random() * this.cols); 
-            let ry = Math.floor(Math.random() * this.rows);
-            this.grid[ry][rx] = STATE.activeSkin;
+
+            // Масштабируем фигуру, чтобы она красиво помещалась в маленький слот выбора (scale 0.5)
+            const scale = 0.45;
+            const blockS = this.cellSize * scale;
             
-            let total = 0; 
-            this.grid.forEach(r => r.forEach(c => { if(c) total++; }));
-            if(total > 45) {
-                this.alive = false; 
-                saveBestScore('blockblast', this.mode, this.score);
-                alert(`Поле заполнено! Результат: ${this.score}`); 
-                updateWallet(Math.floor(this.score / 5));
-                navigateTo('screen-lobby'); 
-                return;
-            }
-        }
+            // Центрируем геометрию матрицы фигуры внутри слота
+            const mRows = shape.matrix.length;
+            const mCols = shape.matrix[0].length;
+            const startX = slot.x - (mCols * blockS) / 2;
+            const startY = this.slotsY - (mRows * blockS) / 2;
 
-        this.ctx.fillStyle = '#060810'; 
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        for(let r = 0; r < this.rows; r++) {
-            for(let c = 0; c < this.cols; c++) {
-                this.ctx.strokeStyle = 'rgba(255,255,255,0.02)';
-                this.ctx.strokeRect(c * this.w, r * this.w, this.w, this.w);
-                if(this.grid[r][c]) {
-                    this.ctx.fillStyle = this.grid[r][c];
-                    this.ctx.fillRect(c * this.w + 2, r * this.w + 2, this.w - 4, this.w - 4);
+            this.ctx.fillStyle = shape.color;
+            for (let r = 0; r < mRows; r++) {
+                for (let c = 0; c < mCols; c++) {
+                    if (shape.matrix[r][c] === 1) {
+                        this.ctx.beginPath();
+                        this.ctx.roundRect(
+                            startX + c * blockS + 1,
+                            startY + r * blockS + 1,
+                            blockS - 2,
+                            blockS - 2,
+                            3
+                        );
+                        this.ctx.fill();
+                    }
                 }
             }
         }
-
-        this.particles.forEach((p, i) => { 
-            p.update(); 
-            p.draw(this.ctx); 
-            if(p.alpha <= 0) this.particles.splice(i, 1); 
-        });
-        const scr = document.getElementById('current-game-score');
-        if (scr) scr.innerText = this.score;
-        requestAnimationFrame(() => this.loop());
-    }
-    destroy() { 
-        this.alive = false; 
-        this.canvas.removeEventListener('pointerdown', this.cl); 
     }
 }
 
-// --- 4. КИБЕР КВЕСТ / РАННЕР (CYBER DASH) ---
-class CyberDash {
-    constructor(canvas, mode) {
-        this.canvas = canvas; 
-        this.ctx = canvas.getContext('2d'); 
-        this.mode = mode;
-        this.player = { x: 50, y: canvas.height / 2, w: 20, h: 20, vy: 0, gravity: 0.6, isUp: false };
-        this.obstacles = []; 
-        this.particles = []; 
-        this.score = 0; 
-        this.alive = true; 
-        this.frame = 0;
-        this.fl = () => this.flip();
-        this.canvas.addEventListener('pointerdown', this.fl);
-        this.loop();
+/**
+ * 3. ОРКЕСТРАТОР ИГРОВОЙ СРЕДЫ (ФАБРИКА РЕГИСТРАЦИИ)
+ */
+class GamesRegistry {
+    constructor() {
+        this.activeEngine = null;
     }
-    flip() {
-        this.player.isUp = !this.player.isUp;
-        this.player.gravity = this.player.isUp ? -0.6 : 0.6;
-        for(let i = 0; i < 6; i++) this.particles.push(new Particle(this.player.x, this.player.y, STATE.activeSkin));
+
+    init() {
+        if (!window.globalStoreStoreBus) return;
+
+        // Слушаем сигнал запуска игр из ядра app.js
+        globalStoreStoreBus.on('game:start', (gameId) => {
+            const canvas = document.getElementById('game-canvas');
+            if (!canvas) return;
+            const context = canvas.getContext('2d');
+
+            // Безопасно уничтожаем предыдущий игровой цикл во избежание утечки CPU ресурсов
+            if (this.activeEngine) {
+                this.activeEngine.destroy();
+                this.activeEngine = null;
+            }
+
+            // Фабричный запуск выбранной игры
+            if (gameId === 'blockblast') {
+                this.activeEngine = new BlockBlastGame(canvas, context);
+                this.activeEngine.init();
+                this.activeEngine.start();
+            }
+        });
+
+        // Слушаем принудительный выход пользователя
+        globalStoreStoreBus.on('game:requestExit', () => {
+            if (this.activeEngine) {
+                this.activeEngine.stop();
+            }
+        });
     }
-    loop() {
-        if(!this.alive) return; 
-        this.frame++;
+}
+
+// Запуск реестра при полной готовности DOM дерева
+document.addEventListener('DOMContentLoaded', () => {
+    const registry = new GamesRegistry();
+    registry.init();
+    
+    // Динамически добавляем карточку Block Blast в лобби, если её там еще нет
+    const grid = document.querySelector('.games-grid');
+    if (grid && !document.querySelector('.game-card[data-game="blockblast"]')) {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.setAttribute('data-game', 'blockblast');
+        card.innerHTML = `
+            <h3>Block Blast</h3>
+            <p>Рекорд: <span id="blockblast-high-score">0</span></p>
+            <button class="btn-play">ИГРАТЬ</button>
+        `;
         
-        this.player.vy += this.player.gravity; 
-        this.player.y += this.player.vy;
-        if(this.player.y < 0) { this.player.y = 0; this.player.vy = 0; }
-        if(this.player.y > this.canvas.height - this.player.h) { 
-            this.player.y = this.canvas.height - this.player.h; 
-            this.player.vy = 0; 
-        }
-
-        if(this.frame % 70 === 0) {
-            let h = Math.random() * 120 + 40; 
-            let pass = Math.random() > 0.5;
-            this.obstacles.push({ x: this.canvas.width, y: pass ? 0 : this.canvas.height - h, w: 24, h: h });
-        }
-
-        this.ctx.fillStyle = '#060810'; 
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        this.ctx.fillStyle = STATE.activeSkin;
-        this.ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
-
-        this.ctx.fillStyle = '#FF453A';
-        for(let i = this.obstacles.length - 1; i >= 0; i--) {
-            let o = this.obstacles[i]; 
-            o.x -= 4.5;
-            this.ctx.fillRect(o.x, o.y, o.w, o.h);
-
-            if(this.player.x < o.x + o.w && this.player.x + this.player.w > o.x &&
-               this.player.y < o.y + o.h && this.player.y + this.player.h > o.y) {
-                this.alive = false; 
-                triggerScreenShake();
-                saveBestScore('cyberdash', this.mode, this.score);
-                alert(`Система повреждена! Финальный счёт: ${this.score}`);
-                updateWallet(Math.floor(this.score / 3)); 
-                navigateTo('screen-lobby'); 
-                return;
-            }
-            if(o.x + o.w < 0) { 
-                this.obstacles.splice(i, 1); 
-                this.score += 10; 
-            }
-        }
-
-        this.particles.forEach((p, i) => { 
-            p.update(); 
-            p.draw(this.ctx); 
-            if(p.alpha <= 0) this.particles.splice(i, 1); 
+        // Подвязываем клик запуска
+        card.querySelector('.btn-play').addEventListener('click', () => {
+            if (window.ui) ui.navigateTo('game');
+            globalStoreStoreBus.emit('game:start', 'blockblast');
         });
-        const scr = document.getElementById('current-game-score');
-        if (scr) scr.innerText = this.score;
-        requestAnimationFrame(() => this.loop());
+        grid.appendChild(card);
+        
+        // Обновляем отображение рекордов для новой игры из localStorage
+        setTimeout(() => {
+            const el = document.getElementById('blockblast-high-score');
+            if (el && window.store) el.textContent = store.get('highScores.blockblast') || 0;
+        }, 50);
     }
-    destroy() { 
-        this.alive = false; 
-        this.canvas.removeEventListener('pointerdown', this.fl); 
-    }
-}
+});
