@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>NOVA ARCADE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<section id="authScreen" class="screen active">
+  <div class="auth-card glass">
+    <div class="logo">
+      <span class="logo-dot"></span>
+      <h1>NOVA<span>ARCADE</span></h1>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="login">Вход</button>
+      <button class="tab-btn" data-tab="register">Регистрация</button>
+      <div class="tab-indicator"></div>
+    </div>
+
+    <form id="loginForm" class="auth-form active">
+      <div class="field">
+        <input type="text" id="loginNick" placeholder=" " required autocomplete="off">
+        <label>Никнейм</label>
+      </div>
+      <div class="field">
+        <input type="password" id="loginPass" placeholder=" " required>
+        <label>Пароль</label>
+      </div>
+      <button type="submit" class="btn-primary">Войти <span class="btn-shine"></span></button>
+      <p class="auth-error" id="loginError"></p>
+    </form>
+
+    <form id="registerForm" class="auth-form">
+      <div class="field">
+        <input type="text" id="regNick" placeholder=" " required autocomplete="off" minlength="3" maxlength="16">
+        <label>Никнейм</label>
+      </div>
+      <div class="field">
+        <input type="password" id="regPass" placeholder=" " required minlength="4">
+        <label>Пароль</label>
+      </div>
+      <div class="field">
+        <input type="password" id="regPass2" placeholder=" " required minlength="4">
+        <label>Повтор пароля</label>
+      </div>
+      <button type="submit" class="btn-primary">Создать аккаунт <span class="btn-shine"></span></button>
+      <p class="auth-error" id="registerError"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ЛОББИ -->
+<section id="lobbyScreen" class="screen">
+  <header class="topbar glass">
+    <div class="profile-chip">
+      <div class="avatar" id="avatarPreview"></div>
+      <div class="profile-info">
+        <span class="profile-name" id="profileName">Player</span>
+        <span class="profile-level">Ур. <span id="profileLevel">1</span></span>
+      </div>
+    </div>
+
+    <div class="currency-chip">
+      <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" fill="url(#coinGrad)"/><defs><linearGradient id="coinGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE27A"/><stop offset="1" stop-color="#FFB020"/></linearGradient></defs></svg>
+      <span id="coinCount">0</span>
+    </div>
+
+    <button class="icon-btn" id="logoutBtn" title="Выйти">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </header>
+
+  <nav class="lobby-nav">
+    <button class="nav-btn active" data-view="games">Игры</button>
+    <button class="nav-btn" data-view="shop">Магазин скинов</button>
+  </nav>
+
+  <div class="view active" id="view-games">
+    <div class="section-head">
+      <h2>Библиотека игр</h2>
+      <input type="text" id="gameSearch" class="search-input" placeholder="Поиск игры...">
+    </div>
+    <div class="game-grid" id="gameGrid"><!-- карточки игр рендерятся из games.js --></div>
+  </div>
+
+  <div class="view" id="view-shop">
+    <div class="section-head">
+      <h2>Магазин скинов</h2>
+      <p class="subtle">Скины меняют внешний вид твоего персонажа/змейки/блока во всех играх</p>
+    </div>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+</section>
+
+<!-- ЭКРАН ИГРЫ -->
+<section id="gameScreen" class="screen">
+  <header class="game-topbar glass">
+    <button class="icon-btn" id="backToLobby">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span id="gameTitle">Игра</span>
+    <button class="icon-btn" id="restartGame" title="Заново">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+  </header>
+  <div class="game-stage" id="gameStage"></div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="storage.js"></script>
+<script src="auth.js"></script>
+<script src="games.js"></script>
+<script src="shop.js"></script>
+<script src="ui.js"></script>
+<script src="snake.js"></script>
+<script src="blockblast.js"></script>
+</body>
+</html>
